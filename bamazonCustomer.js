@@ -64,7 +64,7 @@ var run = function() {
                   chosenProduct.stock_quantity - parseInt(answer.amount)
               },
               {
-                id: chosenProduct.id
+                itemid: chosenProduct.itemid
               }
             ],
             function(error) {
