@@ -1,15 +1,66 @@
-var inquirer = require('inquirer');
-var mysql = require('mysql');
+process.on('uncaughtException', function (err) {
+  console.log(err);
+}); 
+var inquirer = require("inquirer");
+var mysql = require("mysql");
+var Table = require("cli-table");
 
 var connection = mysql.createConnection({
-	host: "bamazon",
-	port: "8889",
-	user: "root",
-	password: "",
-	database: "bamazon_db"
+  host: "localhost",
+  port: "8889",
+  user: "root",
+  password: "",
+  database: "bamazon_db"
 });
 
-connection.query("select * from products", function (err, res) {
-    if (err) throw err;
-    console.log("Connection successful");
-})
+connection.query("SELECT * FROM products", function (err, res) {
+	if (err) throw err;
+	console.log("Item    Product \t\tDepartment \tPrice\t Stock");
+	console.log("------------------------------------------------------------------");
+	for (var i = 0; i < res.length; i++) {
+		console.log(res[i].ItemID + " \t" + res[i].ProductName + "\t" + res[i].DepartmentName + "\t" + res[i].Price + " \t " + res[i].StockQuantity);
+	}
+	console.log("------------------------------------------------------------------");
+
+	inquirer.prompt([{
+		name: "product",
+		type: "input",
+		message: "What is the ID of the product you would like? [Changed your mind? Press Y]"
+	},
+	{
+		name: "qty",
+		type: "input",
+		message: "How many would you like to buy?"
+
+	}]).then(function (productObj) {
+		if (productObj.product.toUpperCase() == "Y") {
+			connection.end();
+		} else {
+			connection.query('SELECT * FROM products WHERE ?', { ItemID: productObj.product }, function (err, res) {
+				if (err) throw err;
+				if (res[0].StockQuantity > productObj.qty) {
+
+					var cost = res[0].Price * productObj.qty
+					console.log("-----------------------------------");
+					console.log("We have that in stock! \nThe total cost is $" + cost.toFixed(2) + "\nThank you for ordering")
+
+					var newQty = res[0].StockQuantity - productObj.qty
+
+					connection.query("UPDATE products SET ? WHERE ?", [{
+						StockQuantity: newQty
+					},
+					{
+						ProductName: productObj.product
+					}],
+
+						function (err, res) {
+						});
+				}
+				else {
+					console.log("-----------------------------------");
+					console.log("Sorry, we do not have enough in stock. \nWe only have " + res[0].StockQuantity + " units of " + ansProd.product + ". \nPlease retry your order. \nThank you!")
+				}
+			})
+		}
+	})
+});
